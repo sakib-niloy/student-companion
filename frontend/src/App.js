@@ -1,55 +1,50 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import Layout from './components/Layout';
 import EmailForm from './components/EmailForm';
-import ExamSchedule from './components/ExamSchedule'; // Create this component
-import MainPage from './components/MainPage'; // HomePage is the main page
+import ExamSchedule from './components/ExamSchedule';   
+import MainPage from './components/MainPage';
 import CourseSelection from './components/CourseSelection';
-import FacultySearch from './components/FacultySearch';
+import FacultySearch from './components/FacultySearch'; 
 import SignUp from './components/SignUp';
 import SignIn from './components/SignIn';
 import FacultyDashboard from './components/FacultyDashboard';
+import CounsellingRequests from './components/CounsellingRequests';
+import StudyMaterials from './components/StudyMaterials';
+import './App.css';
+
+// Simple Protected Route wrapper
+const ProtectedRoute = ({ children }) => {
+    const token = localStorage.getItem('token');        
+    if (!token) {
+        return <Navigate to="/sign-in" replace />;      
+    }
+    return <Layout>{children}</Layout>;
+};
 
 function App() {
     return (
         <Router>
             <div className="App">
-                <nav>
-                    <ul>
-                        <li>
-                            <Link to="/">Signup</Link>
-                        </li>
-                        <li>
-                            <Link to="/sign-in">Sign in</Link>
-                        </li>
-                        <li>
-                            <Link to="/main-page">Home</Link>
-                        </li>
-                        <li>
-                            <Link to="/email-form">Email Form</Link>
-                        </li>
-                        <li>
-                            <Link to="/exam-schedule">Exam Schedule</Link>
-                        </li>
-                        <li>
-                            <Link to="/course-selection">Course Selection</Link>
-                        </li>
-                        <li>
-                            <Link to="/faculty-search">Counselling Booking</Link>
-                        </li>
-                        <li>
-                            <Link to="/faculty-dashboard">Counselling Booking</Link>
-                        </li>
-                    </ul>
-                </nav>
                 <Routes>
+                    {/* Public Routes */}
                     <Route path="/" element={<SignUp />} />
                     <Route path="/sign-in" element={<SignIn />} />
-                    <Route path="/main-page" element={<MainPage />} />
-                    <Route path="/email-form" element={<EmailForm />} />
-                    <Route path="/exam-schedule" element={<ExamSchedule />} />
-                    <Route path="/course-selection" element={<CourseSelection />} />
-                    <Route path="/faculty-search" element={<FacultySearch />} />
-                    <Route path="/faculty-dashboard" element={<FacultyDashboard />} />
+
+                    {/* Protected Routes with Layout */}
+                    <Route path="/main-page" element={<ProtectedRoute><MainPage /></ProtectedRoute>} />
+                    <Route path="/email-form" element={<ProtectedRoute><EmailForm /></ProtectedRoute>} />       
+                    <Route path="/exam-schedule" element={<ProtectedRoute><ExamSchedule /></ProtectedRoute>} /> 
+                    <Route path="/course-selection" element={<ProtectedRoute><CourseSelection /></ProtectedRoute>} />
+                    <Route path="/faculty-search" element={<ProtectedRoute><FacultySearch /></ProtectedRoute>} />
+                    <Route path="/my-counselling" element={<ProtectedRoute><CounsellingRequests /></ProtectedRoute>} />
+                    <Route path="/faculty-dashboard" element={<ProtectedRoute><FacultyDashboard /></ProtectedRoute>} />
+                    <Route path="/study-materials" element={<ProtectedRoute><StudyMaterials /></ProtectedRoute>} />   
+                    <Route path="/events" element={<ProtectedRoute><MainPage /></ProtectedRoute>} />
+                    <Route path="/settings" element={<ProtectedRoute><MainPage /></ProtectedRoute>} />
+
+                    {/* Fallback */}
+                    <Route path="*" element={<Navigate to="/sign-in" replace />} />
                 </Routes>
             </div>
         </Router>

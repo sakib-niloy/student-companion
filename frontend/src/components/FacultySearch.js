@@ -1,25 +1,25 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
-
-
+import './FeatureList.css';
+import NotificationModal from './NotificationModal';
 
 const FacultySearch = () => {
-    const [facultyName, setFacultyName] = useState('');
-    const [facultyList, setFacultyList] = useState([]);
+    const [facultyName, setFacultyName] = useState(''); 
+    const [facultyList, setFacultyList] = useState([]); 
     const [selectedFaculty, setSelectedFaculty] = useState(null);
     const [counsellingTimes, setCounsellingTimes] = useState([]);
     const [selectedTime, setSelectedTime] = useState('');
+    const [notification, setNotification] = useState({ isOpen: false, title: '', message: '' });
 
-    // Function to search faculty by name
     const searchFaculty = async () => {
         try {
-            const response = await axios.get(`http://localhost:5000/api/faculty/search?name=${facultyName}`);
+            const response = await axios.get(`http://localhost:5000/api/faculty/search?name=${facultyName}`);   
             const facultyData = response.data.map(facultyMember => ({
                 ...facultyMember,
                 counselling_times: facultyMember.counselling_times
-                    ? JSON.parse(facultyMember.counselling_times)
-                    : [], 
+                    ? (typeof facultyMember.counselling_times === 'string' ? JSON.parse(facultyMember.counselling_times) : facultyMember.counselling_times)
+                    : [],
             }));
             setFacultyList(facultyData);
         } catch (error) {
@@ -27,98 +27,139 @@ const FacultySearch = () => {
         }
     };
 
-    // Function to request counselling with selected time
-    const requestCounselling = async (facultyId) => {
-        console.log("Selected Time:", selectedTime);
-    
+    const requestCounselling = async (facultyId) => {   
         try {
-            const studentId = getLoggedInStudentId();
+            const studentId = getLoggedInStudentId();   
             if (!studentId) {
-                console.error('Student ID not found');
+                setNotification({ isOpen: true, title: 'Attention', message: 'Please sign in first' });
                 return;
             }
-    
-            console.log("Student ID:", studentId);
-            console.log("Faculty ID:", facultyId);
-            console.log("Sending POST request to API...");
-    
+            if (!selectedTime) {
+                setNotification({ isOpen: true, title: 'Attention', message: 'Please select a time slot' });
+                return;
+            }
+
             const response = await axios.post('http://localhost:5000/api/counselling/request', {
                 studentId: studentId,
                 facultyId: facultyId,
                 requestedTime: selectedTime,
             });
-    
-            console.log("Response:", response.data);  
-            alert(response.data.message);
+
+            setNotification({ isOpen: true, title: 'Success', message: response.data.message });
+            setSelectedFaculty(null);
+            setSelectedTime('');
         } catch (error) {
             console.error('Error requesting counselling:', error);
-            if (error.response) {
-                console.error("Server responded with a status code:", error.response.status);
-                console.error("Response Data:", error.response.data);
-            } else {
-                console.error("Request failed without a response from the server");
-            }
+            setNotification({ isOpen: true, title: 'Error', message: 'Error requesting counselling.' });
         }
     };
-    
-    // Function to get the logged-in student's ID from the JWT token
+
     function getLoggedInStudentId() {
         try {
-            const token = localStorage.getItem('token'); // Assuming token is stored in localStorage
+            const token = localStorage.getItem('token');
             if (token) {
-                const decoded = jwtDecode(token); // Decode the JWT token
-                console.log('Decoded Token:', decoded); // Log the decoded token to check its structure
-                return decoded.id; // Use 'id' from the token
-            } else {
-                console.error('Token not found');
-                return null;
+                const decoded = jwtDecode(token);       
+                return decoded.id;
             }
+            return null;
         } catch (error) {
             console.error('Error decoding token:', error);
             return null;
         }
     }
-    
-    // Function to display available counselling times for a selected faculty member
+
     const showCounsellingTimes = (faculty) => {
         setSelectedFaculty(faculty);
         setCounsellingTimes(faculty.counselling_times || []);
     };
 
     return (
-        <div>
-            <input
-                type="text"
-                placeholder="Search Faculty by Name"
-                value={facultyName}
-                onChange={(e) => setFacultyName(e.target.value)}
-            />
-            <button onClick={searchFaculty}>Search</button>
+        <div className="feature-form-container" style={{maxWidth: '1000px'}}>
+            <h2 style={{fontSize: '2rem', marginBottom: '10px'}}>Faculty Counselling</h2>
+            <p style={{color: '#64748b', marginBottom: '32px'}}>Search and book counselling sessions with faculty members.</p>
 
-            {facultyList.map((faculty) => (
-                <div key={faculty.id}>
-                    <h3>{faculty.name}</h3>
-                    <button onClick={() => showCounsellingTimes(faculty)}>Request Counselling</button>
-                </div>
-            ))}
+            <div className="faculty-search-bar" style={{marginBottom: '40px', background: '#fff', border: '1px solid #e2e8f0', padding: '8px 8px 8px 24px', display: 'flex', alignItems: 'center', gap: '12px', borderRadius: '14px'}}>
+                <span className="search-icon">🔍</span>
+                <input
+                    type="text"
+                    placeholder="Search Faculty by Name"
+                    value={facultyName}
+                    style={{fontSize: '1rem', border: 'none', background: 'transparent', outline: 'none', flex: 1}}
+                    onChange={(e) => setFacultyName(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && searchFaculty()}
+                />
+                <button className="btn btn-primary" style={{padding: '12px 32px'}} onClick={searchFaculty}>Search</button>
+            </div>
+
+            <div className="feature-list" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px'}}>
+                {facultyList.map((faculty) => (
+                    <div key={faculty.id} className="feature-card" style={{padding: '24px', cursor: 'pointer'}} onClick={() => showCounsellingTimes(faculty)}>
+                        <div className="card-icon-circle" style={{width: '48px', height: '48px', marginBottom: '16px'}}>👨‍🏫</div>
+                        <div className="card-content" style={{flex: 1, width: '100%'}}>
+                            <h3 style={{fontSize: '1.1rem', marginBottom: '4px'}}>{faculty.name}</h3>
+                            <p style={{color: '#64748b', fontSize: '0.85rem', marginBottom: '16px'}}>{faculty.department || 'Computer Science'}</p>
+                            <button className="btn btn-primary" style={{width: '100%', fontSize: '0.85rem', padding: '10px'}}>View Schedule</button>
+                        </div>
+                    </div>
+                ))}
+            </div>
 
             {selectedFaculty && (
-                <div>
-                    <h2>Available Counselling Times for {selectedFaculty.name}</h2>
-                    {counsellingTimes.map((time, index) => (
-                        <div key={index}>
-                            <input
-                                type="radio"
-                                value={`${time.day_of_week} ${time.start_time}-${time.end_time}`}
-                                name="counsellingTime"
-                                onChange={(e) => setSelectedTime(e.target.value)}
-                            />
-                            <label>{`${time.day_of_week}: ${time.start_time} - ${time.end_time}`}</label>
+                <div className="preview-box" style={{marginTop: '40px', border: '1px solid #e0e7ff', background: '#f5f7ff', borderRadius: '24px', padding: '32px'}}>    
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px'}}>
+                        <h3 style={{fontSize: '1.25rem', fontWeight: '700'}}>Available Times for {selectedFaculty.name}</h3>
+                        <button style={{background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer'}} onClick={() => setSelectedFaculty(null)}>×</button>
+                    </div>
+
+                    <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px'}}>
+                        {counsellingTimes.length > 0 ? counsellingTimes.map((time, index) => (
+                            <label key={index} className={`feature-card ${selectedTime === `${time.day_of_week} ${time.start_time}-${time.end_time}` ? 'active' : ''}`} 
+                                style={{
+                                    padding: '16px 20px',
+                                    borderRadius: '16px',
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    border: selectedTime === `${time.day_of_week} ${time.start_time}-${time.end_time}` ? '2px solid var(--primary)' : '1px solid #e2e8f0',
+                                    background: selectedTime === `${time.day_of_week} ${time.start_time}-${time.end_time}` ? 'white' : '#fff'
+                                }}>
+                                <input
+                                    type="radio"        
+                                    style={{display: 'none'}}
+                                    value={`${time.day_of_week} ${time.start_time}-${time.end_time}`}
+                                    name="counsellingTime"
+                                    onChange={(e) => setSelectedTime(e.target.value)}
+                                />
+                                <div className="card-icon-circle" style={{width: '32px', height: '32px', fontSize: '0.9rem', marginBottom: '0', marginRight: '16px'}}>📅</div>
+                                <div className="card-content">
+                                    <p style={{fontWeight: '600', fontSize: '0.9rem', color: '#1e293b'}}>{`${time.day_of_week}`}</p>
+                                    <p style={{fontSize: '0.8rem', color: '#64748b'}}>{`${time.start_time} - ${time.end_time}`}</p>
+                                </div>
+                                {selectedTime === `${time.day_of_week} ${time.start_time}-${time.end_time}` && <span style={{marginLeft: 'auto'}}>✅</span>}
+                            </label>
+                        )) : <p>No available counselling times found.</p>}
+                    </div>
+
+                    {counsellingTimes.length > 0 && (   
+                        <div style={{display: 'flex', gap: '12px', marginTop: '32px'}}>
+                            <button
+                                className="btn btn-primary"
+                                style={{flex: 2, padding: '14px'}}
+                                onClick={() => requestCounselling(selectedFaculty.id)}
+                            >
+                                Confirm Request
+                            </button>
+                            <button className="btn" style={{flex: 1, background: '#fff', border: '1px solid #e2e8f0'}} onClick={() => setSelectedFaculty(null)}>Cancel</button>
                         </div>
-                    ))}
-                    <button onClick={() => requestCounselling(selectedFaculty.id)}>Submit Request</button>
+                    )}
                 </div>
             )}
+            
+            <NotificationModal 
+                isOpen={notification.isOpen} 
+                title={notification.title} 
+                message={notification.message} 
+                onClose={() => setNotification({ ...notification, isOpen: false })} 
+            />
         </div>
     );
 };

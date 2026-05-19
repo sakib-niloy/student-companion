@@ -10,7 +10,6 @@ const examScheduleRoutes = require('./routes/examScheduleRoutes');
 const courseRoutes = require('./routes/courseRoutes');
 const facultyRoutes = require('./routes/facultyRoutes'); // Ensure this is correctly set up
 const counsellingRoutes = require('./routes/counsellingRoutes');
-const counsellingRequestsRouter = require('./routes/counsellingRequestsRoutes');
 
 const app = express();
 
@@ -25,8 +24,7 @@ app.use('/api/email', emailRoutes); // For email-related routes
 app.use('/api/exam-schedule', examScheduleRoutes); // For exam schedule-related routes
 app.use('/api/courses', courseRoutes);
 app.use('/api/faculty', facultyRoutes); // Ensure the routes are connected correctly
-app.use('/api/counselling', counsellingRoutes); // Ensure counselling routes are correctly connected
-app.use('/api/counselling-faculty', counsellingRequestsRouter);
+app.use('/api/counselling', counsellingRoutes); // Consolidated counselling routes
 
 // Error handling middleware
 app.use((err, req, res, next) => {

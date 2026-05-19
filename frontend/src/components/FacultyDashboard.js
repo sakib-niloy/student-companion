@@ -7,7 +7,7 @@ const FacultyDashboard = () => {
     return (
         <div>
             <h1>Faculty Dashboard</h1>
-            <FacultyRequests facultyId={facultyId} />
+            <FacultyRequests />
         </div>
     );
 };
